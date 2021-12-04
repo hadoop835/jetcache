@@ -5,7 +5,6 @@ import com.alicp.jetcache.Cache;
 import com.alicp.jetcache.CacheUtil;
 import com.alicp.jetcache.MultiLevelCache;
 import com.alicp.jetcache.anno.support.SpringConfigProvider;
-import com.alicp.jetcache.mq.config.CommonCacheProperties;
 import com.alicp.jetcache.mq.msg.CommandMsg;
 import com.alicp.jetcache.mq.util.NetworkInterfaceUtil;
 import com.alicp.jetcache.support.CacheMessage;
@@ -23,11 +22,10 @@ import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.ConfigurableEnvironment;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * RocketMq 同步数据
@@ -35,42 +33,64 @@ import java.util.stream.Stream;
  */
 public class RocketMqCacheNotifyPolicy implements CacheNotifyPolicy, CacheMessagePublisher, MessageListenerConcurrently {
 
-    private CommonCacheProperties cacheProperties;
-
     private DefaultMQProducer defaultMQProducer;
 
     private DefaultMQPushConsumer defaultMQPushConsumer;
-    /**
-     *
-     */
     @Autowired
     private SpringConfigProvider springConfigProvider;
 
+    private ConfigurableEnvironment environment;
+    /**
+     * 缓存主题
+     */
+    private String topic;
+    /**
+     * 分组
+     */
+    private String group;
     /**
      *
-     * @param cacheProperties
+     * @param environment
      */
-    public RocketMqCacheNotifyPolicy(CommonCacheProperties cacheProperties){
-        this.cacheProperties = cacheProperties;
-        //发送者
-        this.defaultMQProducer = new DefaultMQProducer(cacheProperties.getGroup());
-        this.defaultMQProducer.setNamesrvAddr(cacheProperties.getAddress());
+    public RocketMqCacheNotifyPolicy(ConfigurableEnvironment environment){
+        this.environment = environment;
+        String address = getProp(this.environment,"address");
+        Objects.requireNonNull(address,"rocketmq连接地址不能为空【address】");
+        String _group = getProp(this.environment,"group");
+        if(Objects.isNull(_group)){
+            _group = this.environment.getProperty("spring.application.name");
+        }
+        String suffix = getProp(this.environment,"suffix");
+        if(!Objects.nonNull(suffix)){
+            String[] activeProfiles = this.environment.getActiveProfiles();
+            if(Objects.nonNull(activeProfiles) && activeProfiles.length > 0){
+                suffix = activeProfiles[0];
+            }
+        }
+        log.info("环境变量后缀：jetcache.mq.suffix,值：{}",suffix);
+        Objects.requireNonNull(address,"rocketmq分组不能为空【group】");
+        String _topic = getProp(this.environment,"topic");
+        Objects.requireNonNull(_topic,"rocketmq主题不能为空【topic】");
+        if(Objects.nonNull(suffix)){
+            this.topic = _topic+"-"+suffix;
+            this.group =_group+"-"+suffix;
+        }else{
+            this.topic = _topic;
+            this.group =_group;
+        }
 
+        //发送者
+        this.defaultMQProducer = new DefaultMQProducer(group+"-"+suffix);
+        this.defaultMQProducer.setNamesrvAddr(address);
         //消费者
-        this.defaultMQPushConsumer = new DefaultMQPushConsumer(cacheProperties.getGroup());
+        this.defaultMQPushConsumer = new DefaultMQPushConsumer(group+"-"+suffix);
         this.defaultMQPushConsumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);
-        this.defaultMQPushConsumer.setNamesrvAddr(cacheProperties.getAddress());
+        this.defaultMQPushConsumer.setNamesrvAddr(address);
         this.defaultMQPushConsumer.setMessageModel(MessageModel.BROADCASTING);
     }
 
-    /**
-     *
-     */
-    private static  final String LOCAL_COMMAND = NetworkInterfaceUtil.getMachineId();
-
     @Override
     public void clear(CommandMsg commandMsg) {
-        log.info("删除缓存：{}",commandMsg.toJson());
         Cache cache = springConfigProvider.getCacheManager().getCache(commandMsg.getArea(),commandMsg.getCacheName());
         if(Objects.nonNull(cache)) {
             AbstractCache abstractCache = CacheUtil.getAbstractCache(cache);
@@ -78,22 +98,20 @@ public class RocketMqCacheNotifyPolicy implements CacheNotifyPolicy, CacheMessag
                 MultiLevelCache multiLevelCache = (MultiLevelCache) abstractCache;
                 Cache[] caches = multiLevelCache.caches();
                 Cache local_cache = caches[0];
-                Cache remote_cache = caches[1];
-
                 CacheMessage cacheMessage = commandMsg.getCacheMessage();
-
-                for(Object key : cacheMessage.getKeys()){
-                   log.info("远程查询：{}",remote_cache.get(key));
-                }
                 invalidate(local_cache, cacheMessage.getKeys());
             }
         }
     }
 
+    /**
+     * 删除本地缓存
+     * @param cache
+     * @param keys
+     */
     private  void invalidate(Cache cache,Object[] keys){
         for(Object key : keys){
             Object value =  cache.get(key);
-            log.info("本地查询：{}",value);
             if(Objects.nonNull(value)){
                 cache.remove(key);
             }
@@ -106,7 +124,7 @@ public class RocketMqCacheNotifyPolicy implements CacheNotifyPolicy, CacheMessag
     @Override
     public void publish(CommandMsg commandMsg) {
         commandMsg.setId(LOCAL_COMMAND);
-        Message message = new Message(cacheProperties.getCacheTopic(),commandMsg.toJson().getBytes());
+        Message message = new Message(this.topic,commandMsg.toJson().getBytes());
         try {
             this.defaultMQProducer.send(message);
         } catch (MQClientException | RemotingException | MQBrokerException | InterruptedException e) {
@@ -123,7 +141,7 @@ public class RocketMqCacheNotifyPolicy implements CacheNotifyPolicy, CacheMessag
     public void start()  {
         try {
             this.defaultMQProducer.start();
-            this.defaultMQPushConsumer.subscribe(cacheProperties.getCacheTopic(),"*");
+            this.defaultMQPushConsumer.subscribe(this.topic,"*");
             this.defaultMQPushConsumer.registerMessageListener(this);
             this.defaultMQPushConsumer.start();
         } catch (MQClientException e) {
