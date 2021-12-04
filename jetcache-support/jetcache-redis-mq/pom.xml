@@ -7,20 +7,26 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
+    <properties>
+        <rocketmq-spring-boot-starter.version>2.2.1</rocketmq-spring-boot-starter.version>
 
+    </properties>
     <artifactId>jetcache-redis-mq</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>com.alicp.jetcache</groupId>
-            <artifactId>jetcache-core</artifactId>
+            <artifactId>jetcache-starter-redis-springdata</artifactId>
             <version>${project.version}</version>
         </dependency>
-
         <dependency>
-            <groupId>redis.clients</groupId>
-            <artifactId>jedis</artifactId>
-            <version>${jedis.version}</version>
+            <groupId>org.apache.rocketmq</groupId>
+            <artifactId>rocketmq-spring-boot-starter</artifactId>
+            <version>${rocketmq-spring-boot-starter.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
         </dependency>
 
     </dependencies>
