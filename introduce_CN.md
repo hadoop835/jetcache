@@ -136,4 +136,37 @@ Cache<String, Long> orderSumCache = RedisCacheBuilder.createRedisCacheBuilder()
 
 有了JetCache，我们就可以更方便的基于统一的接口访问缓存。
 
-
+* 配置文件
+```java
+jetcache:
+  statIntervalMinutes: 15
+  areaInCacheName: false
+  local:
+    default:
+      type: linkedhashmap
+      keyConvertor: fastjson
+      limit: 100
+  remote:
+    default:
+      type: redis.springdata #采用spring data redis框架实现远程缓存
+      keyConvertor: fastjson
+      valueEncoder: java
+      valueDecoder: java
+      poolConfig:
+        minIdle: 5
+        maxIdle: 20
+        maxTotal: 50
+      host: 127.0.0.1
+      port: 6379
+  mq:
+    type: redismq# 目前支持redismq、rabbitmq、rocketmq
+    channel: jetcache
+```
+* pom.xml文件配置
+```java
+<dependency>
+        <groupId>com.alicp.jetcache</groupId>
+        <artifactId>jetcache-redis-mq</artifactId>
+        <version>${jetcache.version}</version>
+    </dependency>
+```
