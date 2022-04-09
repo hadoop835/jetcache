@@ -7,6 +7,7 @@ import com.alicp.jetcache.AbstractCacheBuilder;
 import com.alicp.jetcache.Cache;
 import com.alicp.jetcache.CacheConfigException;
 import com.alicp.jetcache.MultiLevelCacheBuilder;
+import com.alicp.jetcache.RefreshCache;
 import com.alicp.jetcache.anno.CacheConsts;
 import com.alicp.jetcache.anno.CacheType;
 import com.alicp.jetcache.anno.EnableCache;
@@ -54,8 +55,8 @@ public class CacheContext {
                 if (cacheAnnoConfig instanceof CachedAnnoConfig) {
                     cache = createCacheByCachedConfig((CachedAnnoConfig) cacheAnnoConfig, invokeContext);
                 } else if ((cacheAnnoConfig instanceof CacheInvalidateAnnoConfig) || (cacheAnnoConfig instanceof CacheUpdateAnnoConfig)) {
-                    CacheInvokeConfig cacheDefineConfig = configMap.getByCacheName(cacheAnnoConfig.getArea(), cacheAnnoConfig.getName());
-                    if (cacheDefineConfig == null) {
+                    CachedAnnoConfig cac = configMap.getByCacheName(cacheAnnoConfig.getArea(), cacheAnnoConfig.getName());
+                    if (cac == null) {
                         String message = "can't find @Cached definition with area=" + cacheAnnoConfig.getArea()
                                 + " name=" + cacheAnnoConfig.getName() +
                                 ", specified in " + cacheAnnoConfig.getDefineMethod();
@@ -63,7 +64,7 @@ public class CacheContext {
                         logger.error("Cache operation aborted because can't find @Cached definition", e);
                         return null;
                     }
-                    cache = createCacheByCachedConfig(cacheDefineConfig.getCachedAnnoConfig(), invokeContext);
+                    cache = createCacheByCachedConfig(cac, invokeContext);
                 }
                 cacheAnnoConfig.setCache(cache);
             }
@@ -134,7 +135,7 @@ public class CacheContext {
                     .buildCache();
         }
         cache.config().setRefreshPolicy(cachedAnnoConfig.getRefreshPolicy());
-        cache = new CacheHandler.CacheHandlerRefreshCache(cache);
+        cache = new RefreshCache(cache);
 
         cache.config().setCachePenetrationProtect(globalCacheConfig.isPenetrationProtect());
         PenetrationProtectConfig protectConfig = cachedAnnoConfig.getPenetrationProtectConfig();
