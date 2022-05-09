@@ -7,14 +7,15 @@ import com.alicp.jetcache.Cache;
 import com.alicp.jetcache.CacheMonitor;
 import com.alicp.jetcache.CacheUtil;
 import com.alicp.jetcache.MultiLevelCache;
-import com.alicp.jetcache.event.CachePutAllEvent;
-import com.alicp.jetcache.event.CachePutEvent;
-import com.alicp.jetcache.event.CacheRemoveAllEvent;
-import com.alicp.jetcache.event.CacheRemoveEvent;
+import com.alicp.jetcache.external.ExternalCacheBuilder;
 import com.alicp.jetcache.support.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.Resource;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -22,6 +23,10 @@ import java.util.function.Consumer;
  * @author <a href="mailto:areyouok@gmail.com">huangli</a>
  */
 public class DefaultCacheMonitorManager extends AbstractLifecycle implements CacheMonitorManager {
+
+    private static final Logger logger = LoggerFactory.getLogger(DefaultCacheMonitorManager.class);
+
+    private final String sourceId = UUID.randomUUID().toString();
 
     private DefaultMetricsManager defaultMetricsManager;
 
@@ -32,49 +37,54 @@ public class DefaultCacheMonitorManager extends AbstractLifecycle implements Cac
     private Consumer<StatInfo> metricsCallback;
 
     @Autowired(required = false)
-    private CacheMessagePublisher cacheMessagePublisher;
+    private BroadcastManager broadcastManager;
+
+    private boolean broadcastManagerInit;
+
+    @Resource
+    private ConfigProvider configProvider;
+
+    private final ConcurrentHashMap<String, BroadcastManager> broadcastManagers = new ConcurrentHashMap<>();
 
     @Override
-    public void addMonitors(String area, String cacheName, Cache cache) {
+    public void addMonitors(String area, String cacheName, Cache cache, boolean syncLocal) {
         addMetricsMonitor(area, cacheName, cache);
-        addCacheUpdateMonitor(area, cacheName, cache);
+        addNotifyMonitor(area, cacheName, cache, syncLocal);
     }
 
-    protected void addCacheUpdateMonitor(String area, String cacheName, Cache cache) {
-        if (cacheMessagePublisher != null) {
-            CacheMonitor monitor = event -> {
-                if (event instanceof CachePutEvent) {
-                    CacheMessage m = new CacheMessage();
-                    CachePutEvent e = (CachePutEvent) event;
-                    m.setType(CacheMessage.TYPE_PUT);
-                    m.setKeys(new Object[]{e.getKey()});
-                    cacheMessagePublisher.publish(area, cacheName, m);
-                } else if (event instanceof CacheRemoveEvent) {
-                    CacheMessage m = new CacheMessage();
-                    CacheRemoveEvent e = (CacheRemoveEvent) event;
-                    m.setType(CacheMessage.TYPE_REMOVE);
-                    m.setKeys(new Object[]{e.getKey()});
-                    cacheMessagePublisher.publish(area, cacheName, m);
-                } else if (event instanceof CachePutAllEvent) {
-                    CacheMessage m = new CacheMessage();
-                    CachePutAllEvent e = (CachePutAllEvent) event;
-                    m.setType(CacheMessage.TYPE_PUT_ALL);
-                    if (e.getMap() != null) {
-                        m.setKeys(e.getMap().keySet().toArray());
-                    }
-                    cacheMessagePublisher.publish(area, cacheName, m);
-                } else if (event instanceof CacheRemoveAllEvent) {
-                    CacheMessage m = new CacheMessage();
-                    CacheRemoveAllEvent e = (CacheRemoveAllEvent) event;
-                    m.setType(CacheMessage.TYPE_REMOVE_ALL);
-                    if (e.getKeys() != null) {
-                        m.setKeys(e.getKeys().toArray());
-                    }
-                    cacheMessagePublisher.publish(area, cacheName, m);
-                }
-            };
-            cache.config().getMonitors().add(monitor);
+    protected void addNotifyMonitor(String area, String cacheName, Cache cache, boolean syncLocal) {
+        if (!syncLocal) {
+            return;
         }
+        if (!(CacheUtil.getAbstractCache(cache) instanceof MultiLevelCache)) {
+            return;
+        }
+        final ExternalCacheBuilder cacheBuilder = (ExternalCacheBuilder) globalCacheConfig.getRemoteCacheBuilders().get(area);
+        if (cacheBuilder == null) {
+            return;
+        }
+
+        BroadcastManager bm = broadcastManagers.computeIfAbsent(area, keyNotUse -> {
+            if (broadcastManager != null) {
+                if (!broadcastManagerInit) {
+                    broadcastManager.startSubscribe(new CacheMessageConsumer(sourceId, configProvider.getCacheManager()));
+                    broadcastManagerInit = true;
+                }
+                return broadcastManager; // first use inject BroadcastManager
+            }
+            if (!cacheBuilder.supportBroadcast()) {
+                return null;
+            }
+            ExternalCacheBuilder builderCopy = (ExternalCacheBuilder) cacheBuilder.clone();
+            BroadcastManager result = builderCopy.broadcastManager(builderCopy.getBroadcastChannel());
+            result.startSubscribe(new CacheMessageConsumer(sourceId, configProvider.getCacheManager()));
+            return result;
+        });
+        if (bm == null) {
+            return;
+        }
+        CacheMonitor monitor = new CacheNotifyMonitor(bm, area, cacheName, cache, sourceId);
+        cache.config().getMonitors().add(monitor);
     }
 
     protected void addMetricsMonitor(String area, String cacheName, Cache cache) {
@@ -115,6 +125,15 @@ public class DefaultCacheMonitorManager extends AbstractLifecycle implements Cac
     @Override
     protected void doShutdown() {
         shutdownMetricsMonitor();
+        for (BroadcastManager m : broadcastManagers.values()) {
+            if (m instanceof AutoCloseable) {
+                try {
+                    ((AutoCloseable) m).close();
+                } catch (Exception e) {
+                    logger.warn("BroadcastManager close fail", e);
+                }
+            }
+        }
     }
 
     protected void shutdownMetricsMonitor() {
@@ -132,9 +151,12 @@ public class DefaultCacheMonitorManager extends AbstractLifecycle implements Cac
         this.metricsCallback = metricsCallback;
     }
 
-    public void setCacheMessagePublisher(CacheMessagePublisher cacheMessagePublisher) {
-        this.cacheMessagePublisher = cacheMessagePublisher;
+    public void setBroadcastManager(BroadcastManager broadcastManager) {
+        this.broadcastManager = broadcastManager;
     }
 
+    public void setConfigProvider(ConfigProvider configProvider) {
+        this.configProvider = configProvider;
+    }
 }
 

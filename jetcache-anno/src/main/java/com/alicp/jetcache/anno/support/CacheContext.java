@@ -6,13 +6,12 @@ package com.alicp.jetcache.anno.support;
 import com.alicp.jetcache.AbstractCacheBuilder;
 import com.alicp.jetcache.Cache;
 import com.alicp.jetcache.CacheConfigException;
+import com.alicp.jetcache.CacheManager;
 import com.alicp.jetcache.MultiLevelCacheBuilder;
 import com.alicp.jetcache.RefreshCache;
 import com.alicp.jetcache.anno.CacheConsts;
 import com.alicp.jetcache.anno.CacheType;
 import com.alicp.jetcache.anno.EnableCache;
-import com.alicp.jetcache.anno.method.CacheHandler;
-import com.alicp.jetcache.anno.method.CacheInvokeConfig;
 import com.alicp.jetcache.anno.method.CacheInvokeContext;
 import com.alicp.jetcache.embedded.EmbeddedCacheBuilder;
 import com.alicp.jetcache.external.ExternalCacheBuilder;
@@ -39,7 +38,7 @@ public class CacheContext {
     private ConfigProvider configProvider;
     private GlobalCacheConfig globalCacheConfig;
 
-    protected SimpleCacheManager cacheManager;
+    protected CacheManager cacheManager;
 
     public CacheContext(ConfigProvider configProvider, GlobalCacheConfig globalCacheConfig) {
         this.globalCacheConfig = globalCacheConfig;
@@ -92,23 +91,17 @@ public class CacheContext {
 
     @Deprecated
     public <K, V> Cache<K, V> getCache(String area, String cacheName) {
-        Cache cache = cacheManager.getCacheWithoutCreate(area, cacheName);
+        Cache cache = cacheManager.getCache(area, cacheName);
         return cache;
     }
 
     public Cache __createOrGetCache(CachedAnnoConfig cachedAnnoConfig, String area, String cacheName) {
-        String fullCacheName = area + "_" + cacheName;
-        Cache cache = cacheManager.getCacheWithoutCreate(area, cacheName);
+        Cache cache = cacheManager.getCache(area, cacheName);
         if (cache == null) {
             synchronized (this) {
-                cache = cacheManager.getCacheWithoutCreate(area, cacheName);
+                cache = cacheManager.getCache(area, cacheName);
                 if (cache == null) {
-                    if (globalCacheConfig.isAreaInCacheName()) {
-                        // for compatible reason, if we use default configuration, the prefix should same to that version <=2.4.3
-                        cache = buildCache(cachedAnnoConfig, area, fullCacheName);
-                    } else {
-                        cache = buildCache(cachedAnnoConfig, area, cacheName);
-                    }
+                    cache = buildCache(cachedAnnoConfig, area, cacheName);
                     cacheManager.putCache(area, cacheName, cache);
                 }
             }
@@ -125,6 +118,7 @@ public class CacheContext {
         } else {
             Cache local = buildLocal(cachedAnnoConfig, area);
             Cache remote = buildRemote(cachedAnnoConfig, area, cacheName);
+
 
             boolean useExpireOfSubCache = cachedAnnoConfig.getLocalExpire() > 0;
             cache = MultiLevelCacheBuilder.createMultiLevelCacheBuilder()
@@ -145,12 +139,12 @@ public class CacheContext {
         }
 
         if (configProvider.getCacheMonitorManager() != null) {
-            configProvider.getCacheMonitorManager().addMonitors(area, cacheName, cache);
+            configProvider.getCacheMonitorManager().addMonitors(area, cacheName, cache, cachedAnnoConfig.isSyncLocal());
         }
         return cache;
     }
 
-    protected Cache buildRemote(CachedAnnoConfig cachedAnnoConfig, String area, String cacheName) {
+    protected Cache buildRemote(CachedAnnoConfig cachedAnnoConfig, String area, String keyPrefix) {
         ExternalCacheBuilder cacheBuilder = (ExternalCacheBuilder) globalCacheConfig.getRemoteCacheBuilders().get(area);
         if (cacheBuilder == null) {
             throw new CacheConfigException("no remote cache builder: " + area);
@@ -161,11 +155,18 @@ public class CacheContext {
             cacheBuilder.expireAfterWrite(cachedAnnoConfig.getExpire(), cachedAnnoConfig.getTimeUnit());
         }
 
+        String fullPrefix;
+        if (globalCacheConfig.isAreaInCacheName()) {
+            // for compatible reason, if we use default configuration, the prefix should same to that version <=2.4.3
+            fullPrefix = area + "_" + keyPrefix;
+        } else {
+            fullPrefix = keyPrefix;
+        }
         if (cacheBuilder.getConfig().getKeyPrefixSupplier() != null) {
             Supplier<String> supplier = cacheBuilder.getConfig().getKeyPrefixSupplier();
-            cacheBuilder.setKeyPrefixSupplier(() -> supplier.get() + cacheName);
+            cacheBuilder.setKeyPrefixSupplier(() -> supplier.get() + fullPrefix);
         } else {
-            cacheBuilder.setKeyPrefix(cacheName);
+            cacheBuilder.setKeyPrefix(fullPrefix);
         }
 
         processKeyConvertor(cachedAnnoConfig, cacheBuilder);
