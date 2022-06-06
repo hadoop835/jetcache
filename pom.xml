@@ -154,7 +154,7 @@
                     <encoding>UTF-8</encoding>
                     <docencoding>UTF-8</docencoding>
                     <links>
-                        <link>http://docs.oracle.com/javase/8/docs/api</link>
+                        <link>https://docs.oracle.com/javase/8/docs/api</link>
                     </links>
                 </configuration>
             </plugin>
@@ -199,10 +199,10 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
 
-        <spring.framework.version>5.3.18</spring.framework.version>
-        <spring.boot.version>2.6.6</spring.boot.version>
+        <spring.framework.version>5.3.20</spring.framework.version>
+        <spring.boot.version>2.7.0</spring.boot.version>
         <lettuce.version>6.1.8.RELEASE</lettuce.version>
-        <jedis.version>4.2.2</jedis.version>
+        <jedis.version>4.2.3</jedis.version>
 
         <!-- 2.6.2
         <spring.framework.version>5.2.4.RELEASE</spring.framework.version>
@@ -294,7 +294,6 @@
                 <groupId>org.mvel</groupId>
                 <artifactId>mvel2</artifactId>
                 <version>2.4.14.Final</version>
-                <optional>true</optional>
             </dependency>
             <dependency>
                 <groupId>com.esotericsoftware</groupId>
@@ -345,7 +344,7 @@
     <licenses>
         <license>
             <name>The Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
 
@@ -368,7 +367,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
+                        <version>3.0.1</version>
                         <executions>
                             <execution>
                                 <phase>verify</phase>
