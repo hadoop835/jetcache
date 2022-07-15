@@ -9,6 +9,7 @@ jetcache:
       keyConvertor: fastjson
       limit: 200
       defaultExpireInMillis: 10000
+      broadcastChannel: projectA
     A1:
       type: linkedhashmap
       keyConvertor: fastjson
@@ -17,19 +18,21 @@ jetcache:
       defaultExpireInMillis: 10000
   remote:
     default:
-      type: mock
-      keyConvertor: bean:myConvertor
-      valueEncoder: bean:myEncoder
-      valueDecoder: bean:myDecoder
-      defaultExpireInMillis: 10000
-      keyPrefix: mockprefix
-      broadcastChannel: projectA
-    A1:
-      type: mock
+      type: redisson
       keyConvertor: fastjson
       defaultExpireInMillis: 10000
-      keyPrefix: mockprefix_a1
+      keyPrefix: spring-data-redis
+    A1:
+      type: redisson
+      keyConvertor: fastjson
+      defaultExpireInMillis: 10000
+      keyPrefix: spring-data-redis-A1
 
+spring:
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    timeout: 1000
 
 
 

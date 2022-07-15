@@ -3,13 +3,13 @@
  */
 package com.alicp.jetcache.test.anno;
 
-import com.alicp.jetcache.anno.support.SpringConfigProvider;
-import com.alicp.jetcache.external.MockRemoteCacheBuilder;
 import com.alicp.jetcache.anno.CacheConsts;
 import com.alicp.jetcache.anno.support.ConfigProvider;
 import com.alicp.jetcache.anno.support.GlobalCacheConfig;
+import com.alicp.jetcache.anno.support.SpringConfigProvider;
 import com.alicp.jetcache.embedded.EmbeddedCacheBuilder;
 import com.alicp.jetcache.embedded.LinkedHashMapCacheBuilder;
+import com.alicp.jetcache.external.MockRemoteCacheBuilder;
 import com.alicp.jetcache.support.FastjsonKeyConvertor;
 import com.alicp.jetcache.support.KryoValueDecoder;
 import com.alicp.jetcache.support.KryoValueEncoder;
@@ -37,12 +37,14 @@ public class TestUtil {
         remoteBuilder.setKeyConvertor(FastjsonKeyConvertor.INSTANCE);
         remoteBuilder.setValueEncoder(KryoValueEncoder.INSTANCE);
         remoteBuilder.setValueDecoder(KryoValueDecoder.INSTANCE);
+        remoteBuilder.setBroadcastChannel("mockBroadcastChannel");
         remoteBuilders.put(CacheConsts.DEFAULT_AREA, remoteBuilder);
 
         remoteBuilder = new MockRemoteCacheBuilder();
         remoteBuilder.setKeyConvertor(FastjsonKeyConvertor.INSTANCE);
         remoteBuilder.setValueEncoder(KryoValueEncoder.INSTANCE);
         remoteBuilder.setValueDecoder(KryoValueDecoder.INSTANCE);
+        remoteBuilder.setBroadcastChannel("mockBroadcastChannel_A1");
         remoteBuilders.put("A1", remoteBuilder);
 
         GlobalCacheConfig globalCacheConfig = new GlobalCacheConfig();
@@ -64,10 +66,15 @@ public class TestUtil {
         return configProvider;
     }
 
-    public static void waitUtil(Object expectValue, Supplier<Object> actual) {
-        waitUtil(expectValue, actual, 1000);
+    public static void waitUtil(Supplier<Boolean> condition) {
+        waitUtil(Boolean.TRUE, condition);
     }
-    public static void waitUtil(Object expectValue, Supplier<Object> actual, long timeoutMillis) {
+
+    public static void waitUtil(Object expectValue, Supplier<? extends Object> actual) {
+        waitUtil(expectValue, actual, 5000);
+    }
+
+    public static void waitUtil(Object expectValue, Supplier<? extends Object> actual, long timeoutMillis) {
         long deadline = System.nanoTime() + timeoutMillis * 1000 * 1000;
         Object obj = actual.get();
         if (Objects.equals(expectValue, obj)) {
