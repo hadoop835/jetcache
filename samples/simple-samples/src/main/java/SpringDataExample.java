@@ -4,6 +4,7 @@
 
 import com.alicp.jetcache.Cache;
 import com.alicp.jetcache.redis.springdata.RedisSpringDataCacheBuilder;
+import com.alicp.jetcache.support.Fastjson2KeyConvertor;
 import org.springframework.data.redis.connection.RedisClusterConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisSentinelConfiguration;
@@ -21,7 +22,8 @@ public class SpringDataExample {
         RedisConnectionFactory factory = lettuceFactory();
         Cache<String, String> cache = RedisSpringDataCacheBuilder.createBuilder()
                 .connectionFactory(factory)
-                .keyPrefix("myCachePrefix")
+                .keyConvertor(Fastjson2KeyConvertor.INSTANCE)
+                .keyPrefix("projectE")
                 .buildCache();
         cache.put("K1", "V1");
         System.out.println(cache.get("K1"));

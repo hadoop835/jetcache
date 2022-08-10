@@ -51,7 +51,8 @@ jetcache:
   remote:
     default:
       type: redis
-      keyConvertor: fastjson
+      keyConvertor: fastjson2
+      broadcastChannel: projectA
       valueEncoder: java
       valueDecoder: java
       poolConfig:
@@ -110,7 +111,7 @@ import com.alicp.jetcache.anno.support.SpringConfigProvider;
 import com.alicp.jetcache.embedded.EmbeddedCacheBuilder;
 import com.alicp.jetcache.embedded.LinkedHashMapCacheBuilder;
 import com.alicp.jetcache.redis.RedisCacheBuilder;
-import com.alicp.jetcache.support.FastjsonKeyConvertor;
+import com.alicp.jetcache.support.Fastjson2KeyConvertor;
 import com.alicp.jetcache.support.JavaValueDecoder;
 import com.alicp.jetcache.support.JavaValueEncoder;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
@@ -122,7 +123,8 @@ import redis.clients.util.Pool;
 
 @Configuration
 @EnableMethodCache(basePackages = "com.company.mypackage")
-@EnableCreateCacheAnnotation
+@EnableCreateCacheAnnotation // deprecated in jetcache 2.7, 如果不用@CreateCache注解可以删除
+@Import(JetCacheBaseBeans.class) //need since jetcache 2.7+
 public class JetCacheConfig {
 
     @Bean
@@ -134,14 +136,14 @@ public class JetCacheConfig {
         return new JedisPool(pc, "localhost", 6379);
     }
 
-    @Bean
-    public SpringConfigProvider springConfigProvider() {
-        return new SpringConfigProvider();
-    }
+    //@Bean for jetcache <=2.6 
+    //public SpringConfigProvider springConfigProvider() {
+    //    return new SpringConfigProvider();
+    //}
 
     @Bean
     public GlobalCacheConfig config(Pool<Jedis> pool){
-    // public GlobalCacheConfig config(SpringConfigProvider configProvider, Pool<Jedis> pool){ // for jetcache 2.5 
+    // public GlobalCacheConfig config(SpringConfigProvider configProvider, Pool<Jedis> pool){ // for jetcache <=2.5 
         Map localBuilders = new HashMap();
         EmbeddedCacheBuilder localBuilder = LinkedHashMapCacheBuilder
                 .createLinkedHashMapCacheBuilder()
@@ -150,18 +152,19 @@ public class JetCacheConfig {
 
         Map remoteBuilders = new HashMap();
         RedisCacheBuilder remoteCacheBuilder = RedisCacheBuilder.createRedisCacheBuilder()
-                .keyConvertor(FastjsonKeyConvertor.INSTANCE)
+                .keyConvertor(Fastjson2KeyConvertor.INSTANCE)
                 .valueEncoder(JavaValueEncoder.INSTANCE)
                 .valueDecoder(JavaValueDecoder.INSTANCE)
+                .broadcastChannel("projectA")
                 .jedisPool(pool);
         remoteBuilders.put(CacheConsts.DEFAULT_AREA, remoteCacheBuilder);
 
         GlobalCacheConfig globalCacheConfig = new GlobalCacheConfig();
-        // globalCacheConfig.setConfigProvider(configProvider); // for jetcache 2.5
+        // globalCacheConfig.setConfigProvider(configProvider); // for jetcache <= 2.5
         globalCacheConfig.setLocalCacheBuilders(localBuilders);
         globalCacheConfig.setRemoteCacheBuilders(remoteBuilders);
         globalCacheConfig.setStatIntervalMinutes(15);
-        globalCacheConfig.setAreaInCacheName(false);
+        //globalCacheConfig.setAreaInCacheName(false); for jetcache <=2.6 
 
         return globalCacheConfig;
     }
@@ -170,7 +173,7 @@ public class JetCacheConfig {
 ```
 
 # 进一步阅读
-* CreateCache的详细使用说明可以看[这里](CreateCache.md)
-* 使用@CacheCache创建的Cache接口实例，它的API使用可以看[这里](CacheAPI.md)
+* 创建Cache实例的详细使用说明可以看[这里](CreateCache.md)
+* Cache接口API使用可以看[这里](CacheAPI.md)
 * 关于方法缓存(@Cached, @CacheUpdate, @CacheInvalidate)的详细使用看[这里](MethodCache.md)
 * 详细的配置说明看[这里](Config.md)。

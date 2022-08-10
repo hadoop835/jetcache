@@ -6,7 +6,7 @@
     <groupId>com.alicp.jetcache</groupId>
     <artifactId>jetcache-parent</artifactId>
     <packaging>pom</packaging>
-    <version>2.7.0-SNAPSHOT</version>
+    <version>2.7.0.RC3</version>
 
     <name>jetcache</name>
     <description>a Java cache abstraction which provides consistent use for various caching solutions</description>
@@ -66,8 +66,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.10.1</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>8</source>
+                    <target>8</target>
+                    <release>8</release>
                     <compilerArgument>-parameters</compilerArgument>
                 </configuration>
             </plugin>
@@ -146,6 +147,8 @@
                     <charset>UTF-8</charset>
                     <encoding>UTF-8</encoding>
                     <docencoding>UTF-8</docencoding>
+                    <source>8</source>
+                    <additionalOptions>-Xdoclint:none</additionalOptions>
                     <links>
                         <link>https://docs.oracle.com/javase/8/docs/api</link>
                     </links>
@@ -168,6 +171,13 @@
                 <groupId>org.eluder.coveralls</groupId>
                 <artifactId>coveralls-maven-plugin</artifactId>
                 <version>4.3.0</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>javax.xml.bind</groupId>
+                        <artifactId>jaxb-api</artifactId>
+                        <version>2.3.1</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>
@@ -194,45 +204,18 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
 
-        <spring.framework.version>5.3.20</spring.framework.version>
-        <spring.boot.version>2.7.0</spring.boot.version>
-        <lettuce.version>6.1.8.RELEASE</lettuce.version>
+        <spring.framework.version>5.3.22</spring.framework.version>
+        <spring.boot.version>2.7.2</spring.boot.version>
+        <lettuce.version>6.1.9.RELEASE</lettuce.version>
         <jedis.version>4.2.3</jedis.version>
         <redisson.version>3.17.3</redisson.version>
 
-        <!-- 2.6.2
+        <!--
         <spring.framework.version>5.2.4.RELEASE</spring.framework.version>
         <spring.boot.version>2.2.5.RELEASE</spring.boot.version>
-        <lettuce.version>5.2.2.RELEASE</lettuce.version>
-        <jedis.version>3.1.0</jedis.version>
         -->
 
-        <!--
-        <spring.framework.version>5.1.6.RELEASE</spring.framework.version>
-        <spring.boot.version>2.1.4.RELEASE</spring.boot.version>
-        <lettuce.version>5.1.6.RELEASE</lettuce.version>
-        <jedis.version>2.9.3</jedis.version>
-        -->
-
-        <!--
-        <lettuce.version>5.1.6.RELEASE</lettuce.version>
-        <jedis.version>2.9.3</jedis.version>
-        -->
-
-        <!--
-        <spring.framework.version>5.1.1.RELEASE</spring.framework.version>
-        <spring.boot.version>2.0.5.RELEASE</spring.boot.version>
-        -->
-
-        <!--
-        <spring.framework.version>4.3.16.RELEASE</spring.framework.version>
-        <spring.boot.version>1.5.12.RELEASE</spring.boot.version>
-        -->
-
-        <!--
-        <spring.framework.version>4.0.8.RELEASE</spring.framework.version>
-        <spring.boot.version>1.1.9.RELEASE</spring.boot.version>
-        -->
+        <jackson.version>2.13.3</jackson.version>
     </properties>
 
     <dependencyManagement>
@@ -277,14 +260,19 @@
             </dependency>
 
             <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>fastjson</artifactId>
+                <version>1.2.83</version>
+            </dependency>
+            <dependency>
                 <groupId>com.alibaba.fastjson2</groupId>
                 <artifactId>fastjson2</artifactId>
-                <version>2.0.9</version>
+                <version>2.0.11</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.13.3</version>
+                <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.mvel</groupId>
@@ -294,12 +282,18 @@
             <dependency>
                 <groupId>com.esotericsoftware</groupId>
                 <artifactId>kryo</artifactId>
+                <version>4.0.2</version>
+            </dependency>
+            <dependency>
+                <groupId>com.esotericsoftware.kryo</groupId>
+                <artifactId>kryo5</artifactId>
                 <version>5.3.0</version>
             </dependency>
             <dependency>
                 <groupId>com.github.ben-manes.caffeine</groupId>
                 <artifactId>caffeine</artifactId>
                 <version>2.9.3</version>
+                <!--3.0+ need java 11-->
             </dependency>
 
             <dependency>
@@ -387,14 +381,4 @@
             </distributionManagement>
         </profile>
     </profiles>
-    <repositories>
-        <repository>
-            <id>spring-milestones</id>
-            <name>Spring Milestones</name>
-            <url>https://repo.spring.io/libs-milestone</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
 </project>
