@@ -6,7 +6,7 @@
     <groupId>com.alicp.jetcache</groupId>
     <artifactId>jetcache-parent</artifactId>
     <packaging>pom</packaging>
-    <version>2.7.0.RC3</version>
+    <version>2.7.1-SNAPSHOT</version>
 
     <name>jetcache</name>
     <description>a Java cache abstraction which provides consistent use for various caching solutions</description>
@@ -267,7 +267,7 @@
             <dependency>
                 <groupId>com.alibaba.fastjson2</groupId>
                 <artifactId>fastjson2</artifactId>
-                <version>2.0.11</version>
+                <version>2.0.12</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
