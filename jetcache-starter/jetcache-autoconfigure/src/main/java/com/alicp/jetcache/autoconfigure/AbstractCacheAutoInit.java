@@ -15,11 +15,12 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created on 2016/11/29.
  *
- * @author <a href="mailto:areyouok@gmail.com">huangli</a>
+ * @author huangli
  */
 public abstract class AbstractCacheAutoInit implements InitializingBean {
 
@@ -30,6 +31,8 @@ public abstract class AbstractCacheAutoInit implements InitializingBean {
 
     @Autowired
     protected AutoConfigureBeans autoConfigureBeans;
+
+    private final ReentrantLock reentrantLock = new ReentrantLock();
 
     protected String[] typeNames;
 
@@ -44,12 +47,15 @@ public abstract class AbstractCacheAutoInit implements InitializingBean {
     @Override
     public void afterPropertiesSet() {
         if (!inited) {
-            synchronized (this) {
+            reentrantLock.lock();
+            try{
                 if (!inited) {
                     process("jetcache.local.", autoConfigureBeans.getLocalCacheBuilders(), true);
                     process("jetcache.remote.", autoConfigureBeans.getRemoteCacheBuilders(), false);
                     inited = true;
                 }
+            }finally {
+                reentrantLock.unlock();
             }
         }
     }

@@ -3,30 +3,27 @@
  */
 package com.alicp.jetcache.embedded;
 
-import com.alicp.jetcache.AbstractCache;
-import com.alicp.jetcache.CacheConfig;
-import com.alicp.jetcache.CacheGetResult;
-import com.alicp.jetcache.CacheResult;
-import com.alicp.jetcache.CacheResultCode;
-import com.alicp.jetcache.CacheValueHolder;
-import com.alicp.jetcache.MultiGetResult;
+import com.alicp.jetcache.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * @author <a href="mailto:areyouok@gmail.com">huangli</a>
+ * @author huangli
  */
 public abstract class AbstractEmbeddedCache<K, V> extends AbstractCache<K, V> {
     protected EmbeddedCacheConfig<K, V> config;
     protected InnerMap innerMap;
 
     protected abstract InnerMap createAreaCache();
+
+    private final ReentrantLock lock = new ReentrantLock();
 
     public AbstractEmbeddedCache(EmbeddedCacheConfig<K, V> config) {
         this.config = config;
@@ -61,7 +58,8 @@ public abstract class AbstractEmbeddedCache<K, V> extends AbstractCache<K, V> {
         } else if (now >= holder.getExpireTime()) {
             return CacheGetResult.EXPIRED_WITHOUT_MSG;
         } else {
-            synchronized (holder) {
+            lock.lock();
+            try{
                 long accessTime = holder.getAccessTime();
                 if (config.isExpireAfterAccess()) {
                     long expireAfterAccess = config.getExpireAfterAccessInMillis();
@@ -70,6 +68,8 @@ public abstract class AbstractEmbeddedCache<K, V> extends AbstractCache<K, V> {
                     }
                 }
                 holder.setAccessTime(now);
+            }finally {
+                lock.unlock();
             }
 
             return new CacheGetResult(CacheResultCode.SUCCESS, null, holder);

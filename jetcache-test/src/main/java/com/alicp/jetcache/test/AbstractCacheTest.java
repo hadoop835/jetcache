@@ -13,6 +13,7 @@ import com.alicp.jetcache.ProxyCache;
 import com.alicp.jetcache.support.DefaultCacheMonitor;
 import com.alicp.jetcache.support.StatInfo;
 import com.alicp.jetcache.support.StatInfoLogger;
+import com.alicp.jetcache.test.anno.TestUtil;
 import com.alicp.jetcache.test.support.DynamicQuery;
 import org.junit.Assert;
 import org.slf4j.Logger;
@@ -35,10 +36,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
+import static com.alicp.jetcache.test.support.Tick.tick;
+
 /**
  * Created on 2016/10/8.
  *
- * @author <a href="mailto:areyouok@gmail.com">huangli</a>
+ * @author huangli
  */
 public abstract class AbstractCacheTest {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -817,7 +820,7 @@ public abstract class AbstractCacheTest {
                         fail.set(true);
                     }
                 } catch (Throwable e) {
-                    if(!"mock error".equals(e.getMessage())){
+                    if (!"mock error".equals(e.getMessage())) {
                         e.printStackTrace();
                     }
                     getFailCount.incrementAndGet();
@@ -842,6 +845,7 @@ public abstract class AbstractCacheTest {
 
         Function<Integer, Integer> loaderFunction = new Function<Integer, Integer>() {
             ConcurrentHashMap<Integer, Integer> map = new ConcurrentHashMap<>();
+
             @Override
             public Integer apply(Integer key) {
                 try {
@@ -919,7 +923,7 @@ public abstract class AbstractCacheTest {
         AtomicInteger loadSuccess = new AtomicInteger(0);
         Function loader = k -> {
             try {
-                Thread.sleep(75);
+                Thread.sleep(tick(75));
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -937,7 +941,7 @@ public abstract class AbstractCacheTest {
         t2.join();
         Assert.assertEquals(2, loadSuccess.intValue());
 
-        cache.config().setPenetrationProtectTimeout(Duration.ofMillis(200));
+        cache.config().setPenetrationProtectTimeout(Duration.ofSeconds(60));
         loadSuccess.set(0);
         runnable = () -> cache.computeIfAbsent(keyPrefix + 2, loader);
         t1 = new Thread(runnable);
@@ -945,9 +949,9 @@ public abstract class AbstractCacheTest {
         Thread t3 = new Thread(runnable);
         t1.start();
         t2.start();
-        Thread.sleep(25);
+        Thread.sleep(tick(25));
         t3.start();
-        Thread.sleep(25);
+        Thread.sleep(tick(25));
         t3.interrupt();
         t1.join();
         t2.join();

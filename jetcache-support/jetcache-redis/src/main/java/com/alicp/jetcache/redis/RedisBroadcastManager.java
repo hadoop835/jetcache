@@ -13,11 +13,12 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.UnifiedJedis;
 
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created on 2022-05-03
  *
- * @author <a href="mailto:areyouok@gmail.com">huangli</a>
+ * @author huangli
  */
 public class RedisBroadcastManager extends BroadcastManager {
 
@@ -31,6 +32,8 @@ public class RedisBroadcastManager extends BroadcastManager {
     private volatile boolean closed;
     private volatile boolean subscribe;
     private boolean subscribeThreadStart;
+
+    private final ReentrantLock reentrantLock = new ReentrantLock();
 
     public RedisBroadcastManager(CacheManager cacheManager, RedisCacheConfig<Object, Object> config) {
         super(cacheManager);
@@ -48,16 +51,21 @@ public class RedisBroadcastManager extends BroadcastManager {
     }
 
     @Override
-    public synchronized void startSubscribe() {
-        if (subscribeThreadStart) {
-            throw new IllegalStateException("subscribe thread is started");
+    public void startSubscribe() {
+        reentrantLock.lock();
+        try {
+            if (subscribeThreadStart) {
+                throw new IllegalStateException("subscribe thread is started");
+            }
+            this.cacheMessagePubSub = new CacheMessagePubSub();
+            Thread subThread;
+            subThread = new Thread(this::runSubThread, "Sub_" + channelStr);
+            subThread.setDaemon(true);
+            subThread.start();
+            this.subscribeThreadStart = true;
+        }finally {
+            reentrantLock.unlock();
         }
-        this.cacheMessagePubSub = new CacheMessagePubSub();
-        Thread subThread;
-        subThread = new Thread(this::runSubThread, "Sub_" + channelStr);
-        subThread.setDaemon(true);
-        subThread.start();
-        this.subscribeThreadStart = true;
     }
 
     private void runSubThread() {
@@ -116,17 +124,22 @@ public class RedisBroadcastManager extends BroadcastManager {
 
 
     @Override
-    public synchronized void close() {
-        if (this.closed) {
-            return;
-        }
-        this.closed = true;
-        if (subscribe) {
-            try {
-                this.cacheMessagePubSub.unsubscribe(channel);
-            } catch (Exception e) {
-                logger.warn("unsubscribe {} fail", channelStr, e);
+    public void close() {
+        reentrantLock.lock();
+        try {
+            if (this.closed) {
+                return;
             }
+            this.closed = true;
+            if (subscribe) {
+                try {
+                    this.cacheMessagePubSub.unsubscribe(channel);
+                } catch (Exception e) {
+                    logger.warn("unsubscribe {} fail", channelStr, e);
+                }
+            }
+        }finally {
+            reentrantLock.unlock();
         }
     }
 

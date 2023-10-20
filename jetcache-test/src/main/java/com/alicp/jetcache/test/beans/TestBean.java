@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author <a href="mailto:areyouok@gmail.com">huangli</a>
+ * @author huangli
  */
 @Component("testBean")
 public class TestBean {
@@ -88,22 +88,22 @@ public class TestBean {
         return count++;
     }
 
-    @Cached(condition = "mvel{bean('configBean').trueProp}")
+    @Cached(condition = "bean('configBean').trueProp")
     public int countEnabledWithConfigBean(){
         return count++;
     }
 
-    @Cached(condition = "mvel{bean('configBean').falseProp}")
+    @Cached(condition = "bean('configBean').falseProp")
     public int countDisabledWithConfigBean(){
         return count++;
     }
 
-    @Cached(condition = "mvel{xxx('configBean').trueProp}")
+    @Cached(condition = "xxx('configBean').trueProp")
     public int countWithWrongCondition(){
         return count++;
     }
 
-    @Cached(condition = "mvel{args[0]}")
+    @Cached(condition = "args[0]")
     public int count(boolean useCache){
         return count++;
     }

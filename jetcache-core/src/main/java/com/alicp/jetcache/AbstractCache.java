@@ -21,13 +21,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
  * Created on 2016/10/7.
  *
- * @author <a href="mailto:areyouok@gmail.com">huangli</a>
+ * @author huangli
  */
 public abstract class AbstractCache<K, V> implements Cache<K, V> {
 
@@ -36,13 +37,17 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
     private volatile ConcurrentHashMap<Object, LoaderLock> loaderMap;
 
     protected volatile boolean closed;
+    private static final ReentrantLock reentrantLock = new ReentrantLock();
 
     ConcurrentHashMap<Object, LoaderLock> initOrGetLoaderMap() {
         if (loaderMap == null) {
-            synchronized (this) {
+            reentrantLock.lock();
+            try {
                 if (loaderMap == null) {
                     loaderMap = new ConcurrentHashMap<>();
                 }
+            }finally {
+                reentrantLock.unlock();
             }
         }
         return loaderMap;

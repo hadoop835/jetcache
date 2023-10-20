@@ -14,12 +14,12 @@ import org.springframework.context.ConfigurableApplicationContext;
 import java.time.Duration;
 
 /**
- * @author <a href="mailto:areyouok@gmail.com">huangli</a>
+ * @author huangli
  */
 @SpringBootApplication
 public class CacheReader {
     public static void main(String[] args) throws Exception {
-        ConfigurableApplicationContext context = SpringApplication.run(CacheUpdater.class);
+        ConfigurableApplicationContext context = SpringApplication.run(CacheReader.class);
         CacheManager cm = context.getBean(CacheManager.class);
         QuickConfig qc = QuickConfig.newBuilder("spring-boot-sync-test")
                 .cacheType(CacheType.BOTH)
