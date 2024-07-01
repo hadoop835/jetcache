@@ -6,8 +6,32 @@
 
     <groupId>com.alicp.jetcache</groupId>
     <artifactId>jetcache-bom</artifactId>
-    <version>2.7.6-SNAPSHOT</version>
+    <version>2.7.7-SNAPSHOT</version>
     <packaging>pom</packaging>
+
+    <name>jetcache</name>
+    <description>a Java cache abstraction which provides consistent use for various caching solutions</description>
+    <url>https://github.com/alibaba/jetcache</url>
+    <inceptionYear>2013</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>huangli</name>
+            <email>areyouok@gmail.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/alibaba/jetcache.git</connection>
+        <url>https://github.com/alibaba/jetcache</url>
+    </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -47,62 +71,62 @@
             <dependency>
                 <groupId>com.alicp.jetcache</groupId>
                 <artifactId>jetcache-anno</artifactId>
-                <version>2.7.6-SNAPSHOT</version>
+                <version>2.7.7-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.alicp.jetcache</groupId>
                 <artifactId>jetcache-anno-api</artifactId>
-                <version>2.7.6-SNAPSHOT</version>
+                <version>2.7.7-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.alicp.jetcache</groupId>
                 <artifactId>jetcache-core</artifactId>
-                <version>2.7.6-SNAPSHOT</version>
+                <version>2.7.7-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.alicp.jetcache</groupId>
                 <artifactId>jetcache-autoconfigure</artifactId>
-                <version>2.7.6-SNAPSHOT</version>
+                <version>2.7.7-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.alicp.jetcache</groupId>
                 <artifactId>jetcache-starter-redis</artifactId>
-                <version>2.7.6-SNAPSHOT</version>
+                <version>2.7.7-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.alicp.jetcache</groupId>
                 <artifactId>jetcache-starter-redis-lettuce</artifactId>
-                <version>2.7.6-SNAPSHOT</version>
+                <version>2.7.7-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.alicp.jetcache</groupId>
                 <artifactId>jetcache-starter-redis-springdata</artifactId>
-                <version>2.7.6-SNAPSHOT</version>
+                <version>2.7.7-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.alicp.jetcache</groupId>
                 <artifactId>jetcache-starter-redisson</artifactId>
-                <version>2.7.6-SNAPSHOT</version>
+                <version>2.7.7-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.alicp.jetcache</groupId>
                 <artifactId>jetcache-redis</artifactId>
-                <version>2.7.6-SNAPSHOT</version>
+                <version>2.7.7-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.alicp.jetcache</groupId>
                 <artifactId>jetcache-redis-lettuce</artifactId>
-                <version>2.7.6-SNAPSHOT</version>
+                <version>2.7.7-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.alicp.jetcache</groupId>
                 <artifactId>jetcache-redis-springdata</artifactId>
-                <version>2.7.6-SNAPSHOT</version>
+                <version>2.7.7-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.alicp.jetcache</groupId>
                 <artifactId>jetcache-redisson</artifactId>
-                <version>2.7.6-SNAPSHOT</version>
+                <version>2.7.7-SNAPSHOT</version>
             </dependency>
 
             <dependency>
@@ -170,7 +194,7 @@
             <dependency>
                 <groupId>com.alibaba.fastjson2</groupId>
                 <artifactId>fastjson2</artifactId>
-                <version>2.0.45</version>
+                <version>2.0.51</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -223,6 +247,20 @@
 
         </pluginManagement>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <artifactId>maven-help-plugin</artifactId>
                 <inherited>false</inherited>
