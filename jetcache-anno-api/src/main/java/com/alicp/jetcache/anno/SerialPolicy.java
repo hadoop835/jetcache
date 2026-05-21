@@ -11,6 +11,9 @@ import java.util.function.Function;
 public interface SerialPolicy {
     String JAVA = "JAVA";
 
+    /**
+     * since 2.8.0, the KRYO also use KRYO5 implementation, so KRYO and KRYO5 are same.
+     */
     String KRYO = "KRYO";
 
     /**
@@ -30,7 +33,9 @@ public interface SerialPolicy {
 
     int IDENTITY_NUMBER_JAVA = 0x4A953A80;
     // int IDENTITY_NUMBER_FASTJSON = 0x4A953A81; not used since 2.5+
-    int IDENTITY_NUMBER_KRYO4 = 0x4A953A82;
+
+    // removed in 2.8.0
+    // int IDENTITY_NUMBER_KRYO4 = 0x4A953A82;
 
     /**
      * @since 2.7
