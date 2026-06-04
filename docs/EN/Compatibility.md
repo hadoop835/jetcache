@@ -12,11 +12,28 @@ jetcache tested with below spring/spring-boot versions
 # compatible change notes
 ## 2.8.0
 * Java 17 is now the minimum required version
+* `areaInCacheName` default value is now `false` (was `true` in versions prior to 2.8.0).
+* kryo4 is no longer supported, `com.esotericsoftware:kryo` is upgraded to 5.x. The `KRYO` constant in `SerialPolicy` now uses kryo5 implementation internally. kryo4 serialized data is not compatible with kryo5, wait for old cache entries to expire or clear cache before upgrading
 * Removed fastjson1 support, `fastjson` key convertor now uses fastjson2 internally. If you need fastjson1, add the dependency yourself and implement a custom KeyConvertor
 * Removed Spring XML namespace support (`<jetcache:xxx>` tags in XML configuration are no longer available)
-* kryo4 is no longer supported, `com.esotericsoftware:kryo` is upgraded to 5.x. The `KRYO` constant in `SerialPolicy` now uses kryo5 implementation internally. kryo4 serialized data is not compatible with kryo5, wait for old cache entries to expire or clear cache before upgrading
-* Removed `IDENTITY_NUMBER_KRYO4` constant
-* `areaInCacheName` default value is now `false` (was `true` in versions prior to 2.8.0). 
+* Added deserialization filter mechanism (enabled by default). This is a **breaking change** — if your cached values contain custom classes not in the default allowed list, deserialization (or serialization) will fail immediately after upgrading.
+  
+  **Upgrade steps**: Since older versions do not have this configuration option, pre-configuration before upgrading is not possible. Two recommended approaches:
+  
+  Option 1: Add `decodeFilterAllowPatterns` configuration **at the same time** as upgrading JetCache, including the package names of your custom classes in the allow list. For example:
+  ```yaml
+  jetcache:
+    decodeFilterAllowPatterns:
+      - com.yourcompany.
+  ```
+  
+  Option 2: Disable the filter during upgrade (same behavior as 2.7):
+  ```yaml
+  jetcache:
+    decodeFilterEnabled: false
+  ```
+  
+  See the "Deserialization Filter Configuration" section in the [configuration docs](Config.md) for the list of default allowed packages and detailed setup instructions. 
 
 ## 2.7.4
 * use spring-boot 3.1.3, spring-framework 6.0.11, slf4j-api 2.x as default
@@ -27,11 +44,14 @@ jetcache tested with below spring/spring-boot versions
 
 ## 2.7.0
 * jetcache-redis depends on jedis4，springdata(jedis) depends on jedis3, can't use together
-* encoder/decoder now support kryo5. In yml "kryo" maps to `com.esotericsoftware:kryo` (5.x), "kryo5" maps to `com.esotericsoftware.kryo:kryo5`. Both use kryo5 serialization format and are wire-compatible, but have different maven coordinates and Java package names, so they can coexist
+* encoder/decoder now support kryo4 and kryo5, in yml "kryo" is kryo4，"kryo5" is kryo5. the kryo4 and kryo5 is not compatible.
+    * in maven kryo4 is com.esotericsoftware:kryo, kryo5 is com.esotericsoftware.kryo:kryo5
+    * kryo4 and kryo5 can be used together
+    * notice that version of com.esotericsoftware:kryo can be set to 5.x.x
 * use lettuce to connect redis cluster need specify "mode=cluster" in yml
 * default key convertor change to "fastjson2", fastjson2 and fastjson can be used together, fastjson(not fastjson2)/kryo/kryo5/mvel is now optional in maven
 * if not use spring boot, add ```@Import(JetCacheBaseBeans.class)```, and remove old configProvider bean definition. see docs for detail example.
-* change GlobalCacheConfig.areaInCacheName default value to false (note: the default value was still `true` due to a bug, fixed in 2.8.0)
+* change GlobalCacheConfig.areaInCacheName default value to false (has bug, default value may still be true), need to add areaInCacheName=false
 
 ## 2.6.0
 * GET/GET_ALL method of RefreshCache will not trigger auto refresh
